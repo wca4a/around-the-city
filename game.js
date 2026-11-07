@@ -375,6 +375,18 @@ function announceFootballMatch(){const message='Today at the stadium: the '+foot
 function watchFootball(){if(scene!=='inside'||currentBuilding.name!=='Football stadium')return;footballRun=false;footballShot=null;footballSpectating=true;vehicle=null;themeParkRide=null;touchWalkTargets[secondTurn?1:0]=null;p.x=680;p.y=secondTurn?364:310;moving=false;notify('You are in the stands! Watch the teams, or press '+(secondTurn?'F':'E')+' to return to the field.');announceFootballMatch();updateUI()}
 function leaveFootballStands(){footballSpectating=false;p.x=570;p.y=480;moving=false;notify('You are back beside the field!');updateUI()}
 function footballPlayers(t=time){const phase=t*Math.PI/6;return Array.from({length:10},(_,i)=>{const team=i<5?0:1,slot=i%5;return {x:290+slot*66+Math.sin(phase+slot)*14,y:325+(team?34:-34)+Math.sin(phase)*57+Math.cos(phase*2+slot)*10,team,number:slot+1,color:footballMatch[team].color,teamName:footballMatch[team].name}})}
+function drawFootballPlayer(player,phase=time*8){
+const x=player.x,y=player.y,a=reduced.matches?0:Math.sin(phase+player.number)*5,face=player.team?-1:1,color=player.color;
+c.save();c.fillStyle='rgba(60,65,49,.18)';c.beginPath();c.ellipse(x,y+19,17,4,0,0,Math.PI*2);c.fill();
+// Football pants, knee pads, long socks and cleats follow the running stride.
+for(const side of [-1,1]){const hip=x+side*5,knee=hip+side*a,foot=knee+side*3;line([[hip,y-1],[knee,y+9]],'#eee9db',9);line([[hip+side*3,y-1],[knee+side*3,y+8]],color,2);circle(knee,y+9,3,'#dad9ce');line([[knee,y+12],[foot,y+18]],'#eee9db',4);line([[foot-side*2,y+19],[foot+face*7,y+19]],'#353e42',5);for(let stud=0;stud<3;stud++)line([[foot+face*stud*2,y+21],[foot+face*stud*2,y+23]],'#53564c',1)}
+// Broad shoulder pads under the jersey, with bent arms and white gloves.
+c.fillStyle=color;c.strokeStyle='#53564c';c.lineWidth=2;c.beginPath();for(const [i,point] of [[0,[-15,-20]],[1,[-8,-24]],[2,[8,-24]],[3,[15,-20]],[4,[13,-12]],[5,[9,-13]],[6,[8,1]],[7,[-8,1]],[8,[-9,-13]],[9,[-13,-12]]]){if(!i)c.moveTo(x+point[0],y+point[1]);else c.lineTo(x+point[0],y+point[1])}c.closePath();c.fill();c.stroke();
+for(const side of [-1,1]){const handY=y-7+side*a;line([[x+side*13,y-15],[x+side*18,y-6],[x+side*13,handY]],'#bd906e',5);line([[x+side*10,y-19],[x+side*15,y-18]],'#fff8ed',2);circle(x+side*13,handY,3,'#fff8ed')}
+line([[x-7,y],[x+7,y]],'#353e42',3);text(String(player.number),x,y-7,13,'#fff8ed');
+// Helmet shell, center stripe, ear pad, dark visor, chin strap and metal face cage.
+circle(x,y-33,10,color);line([[x-2,y-42],[x-2,y-33]],'#fff8ed',3);rect(x+face*2-(face<0?8:0),y-35,8,7,'#35434a');circle(x-face*5,y-31,3,'#e7e5dc');line([[x+face*6,y-36],[x+face*14,y-34],[x+face*14,y-26],[x+face*3,y-24]],'#c7cccd',2);line([[x+face*5,y-30],[x+face*14,y-30]],'#c7cccd',1.5);line([[x-face*3,y-25],[x+face*4,y-22],[x+face*8,y-27]],'#fff8ed',1.5);c.restore()
+}
 function drawFootballSpectator(x,y,color='#83b6cf'){rect(x-13,y-9,26,20,'#568ebd');circle(x,y-27,8,'#edd0ac');rect(x-7,y-17,14,17,color);line([[x-5,y],[x+5,y+6],[x+13,y+6],[x+13,y+18]],'#687b8e',4);line([[x+5,y],[x+15,y+3],[x+22,y+3],[x+22,y+15]],'#687b8e',4);line([[x-6,y-13],[x+3,y-4],[x+11,y-4]],'#edd0ac',3)}
 function startFootballRun(){footballSpectating=false;footballRun=true;footballShot=null;p.x=430;p.y=450;notify('Run to the far end zone for a touchdown!')}
 function kickFootball(){footballSpectating=false;p.x=430;p.y=450;footballRun=false;footballShot={elapsed:0};notify('Up goes the kick!')}
@@ -389,8 +401,8 @@ for(let yard=0;yard<7;yard++){const yy=237+yard*30;line([[237,yy],[623,yy]],'#ff
 line([[430,190],[430,174],[380,174],[380,145]],'#f4d44d',5);line([[430,174],[480,174],[480,145]],'#f4d44d',5);
 text('FOOTBALL STADIUM',430,112,25);text(footballMatchLabel(),430,138,18);text('YOUR SCORE: '+(activityState.footballScore||0),430,160,16);
 rect(220,480,165,28,'#c79862');text('🍬 🍿 🍕',302,499,22);
-const teamPlayers=footballPlayers();for(const player of teamPlayers){person(player.x,player.y,time*8,true,player.color);circle(player.x,player.y-27,9,player.color);line([[player.x+3,player.y-26],[player.x+11,player.y-26],[player.x+11,player.y-21],[player.x+3,player.y-21]],'#fff8ed',1.5);text(String(player.number),player.x,player.y,9,'#fff8ed')}
-if(!footballRun&&!footballShot){const pass=(time%3)/3,from=teamPlayers[1],to=teamPlayers[3];text('🏈',from.x+(to.x-from.x)*pass,from.y+(to.y-from.y)*pass-12-Math.sin(pass*Math.PI)*25,18)}
+const teamPlayers=footballPlayers().sort((a,b)=>a.y-b.y);for(const player of teamPlayers)drawFootballPlayer(player);
+if(!footballRun&&!footballShot){const pass=(time%3)/3,from=teamPlayers.find(player=>player.team===0&&player.number===2),to=teamPlayers.find(player=>player.team===0&&player.number===4);text('🏈',from.x+(to.x-from.x)*pass,from.y+(to.y-from.y)*pass-12-Math.sin(pass*Math.PI)*25,18)}
 if(footballSpectating){drawFootballSpectator(p.x,p.y);text('YOU',p.x,p.y-45,13,'#267cb6');text('Watching from the stands',430,530,18)}
 if(footballRun)text('🏈',p.x+13,p.y-6,20);else if(footballShot){const t=footballShot.elapsed/2;text('🏈',430,440-270*t-Math.sin(t*Math.PI)*90,24)};
 }
